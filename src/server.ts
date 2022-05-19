@@ -6,6 +6,7 @@ import * as db from './db';
 import * as metrics from './metrics';
 import { generateAppSchema, defaultResolver } from './schema';
 import { logger } from './logger';
+import { ApolloServerPluginUsageReporting } from "apollo-server-core";
 
 // sha expiration time (in ms). Defaults to 20m.
 const BUNDLE_SHA_TTL = Number(process.env.BUNDLE_SHA_TTL) || 20 * 60 * 1000;
@@ -38,6 +39,7 @@ const buildApolloServer = (app: express.Express, bundleSha: string): ApolloServe
   const schema = generateAppSchema(app, bundleSha);
   const server = new ApolloServer({
     schema,
+    logger: logger,
     playground: true,
     introspection: true,
     fieldResolver: defaultResolver(app, bundleSha),
@@ -51,6 +53,11 @@ const buildApolloServer = (app: express.Express, bundleSha: string): ApolloServe
           };
         },
       },
+      ApolloServerPluginUsageReporting({
+        debugPrintReports: true,
+        endpointUrl: 'http://localhost:8080/',
+        sendReportsImmediately: true,
+      }),
     ],
   });
 

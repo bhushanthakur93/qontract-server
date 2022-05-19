@@ -6,7 +6,7 @@ const logFormat = printf((info: any) => {
 });
 
 export const logger = createLogger({
-  level: 'info',
+  level: 'debug',
   format: combine(timestamp(), splat(), logFormat),
   transports: [new transports.Console()],
 });
