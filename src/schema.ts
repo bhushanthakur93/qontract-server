@@ -18,7 +18,6 @@ import {
 
 import * as db from './db';
 
-const obj_hash = require('object-hash')
 
 const isRef = (obj: Object): boolean => {
   return obj.constructor === Object && Object.keys(obj).length === 1 && '$ref' in obj;
@@ -125,10 +124,8 @@ const resolveSyntheticField = (app: express.Express,
 
  
 
-  let key = obj_hash({"bundleSha" : bundleSha, "path": path, "schema": schema, "subAttr": subAttr})
-
+  let key = bundleSha+path+schema+subAttr                              
   if (map1.get(key) === undefined) {
-    console.log('No cache for ' + bundleSha + "\t" + path + "\t" + schema + "\t" + subAttr)
     let result: db.Datafile[] = Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
 
       if (datafile.$schema !== schema) { return false; }
