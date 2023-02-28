@@ -112,18 +112,57 @@ const pathRefExistsInDatafile = (path: string, datafile: any,
   return false;
 };
 
+console.log("EACH TIME NEW")
+const map1 = new Map() 
 // synthetic field resolver
 const resolveSyntheticField = (app: express.Express,
                                bundleSha: string,
                                path: string,
                                schema: string,
-                               subAttr: string): db.Datafile[] =>
-  Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
+                               subAttr: string): db.Datafile[] => {
 
-    if (datafile.$schema !== schema) { return false; }
+  console.log('Map size is ' + map1.size)
+  
+  var start = Date.now()
+  if (map1.get(bundleSha)?.get(path)?.get(schema)?.get(subAttr) === undefined) {
+    console.log('No cache for ' + bundleSha + "\t" + path + "\t" + schema + "\t" + subAttr)
+    let result: db.Datafile[] = Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
 
-    return pathRefExistsInDatafile(path, datafile, subAttr.split('.'), 0);
-  }).values());
+      if (datafile.$schema !== schema) { return false; }
+
+      return pathRefExistsInDatafile(path, datafile, subAttr.split('.'), 0);
+    }).values());
+
+
+    if (map1.get(bundleSha) === undefined) {
+      map1.set(bundleSha, new Map().set(path, new Map().set(schema, new Map().set(subAttr, result))))      
+    } else {
+      if (map1.get(bundleSha).get(path) === undefined) {
+        map1.get(bundleSha).set(path, new Map().set(schema, new Map().set(subAttr, result)))
+      } else {
+        if (map1.get(bundleSha).get(path).get(schema) === undefined) {
+          map1.get(bundleSha).get(path).set(schema, new Map().set(subAttr, result))
+        } else {
+          if (map1.get(bundleSha).get(path).get(schema).get(subAttr) === undefined) {
+            map1.get(bundleSha).get(path).get(schema).set(subAttr, result)
+          }
+            
+        }
+      }
+    }
+    
+    // console.log(map1.get(bundleSha).get(path).get(schema).get(subAttr))
+    let end = Date.now()
+    console.log(end-start)
+    return result;
+  }
+
+  console.log('Yes Cache')
+  let end = Date.now()
+  console.log(end-start)
+  return map1.get(bundleSha).get(path).get(schema).get(subAttr)
+
+}
 
 // default resolver
 export const defaultResolver = (app: express.Express, bundleSha: string) =>
