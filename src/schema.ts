@@ -18,6 +18,7 @@ import {
 
 import * as db from './db';
 
+
 const isRef = (obj: Object): boolean => {
   return obj.constructor === Object && Object.keys(obj).length === 1 && '$ref' in obj;
 };
@@ -112,18 +113,38 @@ const pathRefExistsInDatafile = (path: string, datafile: any,
   return false;
 };
 
+console.log("EACH TIME NEW")
+const map1 = new Map() 
 // synthetic field resolver
 const resolveSyntheticField = (app: express.Express,
                                bundleSha: string,
                                path: string,
                                schema: string,
-                               subAttr: string): db.Datafile[] =>
-  Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
+                               subAttr: string): db.Datafile[] => {
 
-    if (datafile.$schema !== schema) { return false; }
+ 
 
-    return pathRefExistsInDatafile(path, datafile, subAttr.split('.'), 0);
-  }).values());
+  let key = bundleSha+path+schema+subAttr                              
+  if (map1.get(key) === undefined) {
+    let result: db.Datafile[] = Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
+
+      if (datafile.$schema !== schema) { return false; }
+
+      return pathRefExistsInDatafile(path, datafile, subAttr.split('.'), 0);
+    }).values());
+
+    map1.set(key, result)
+    return result
+  }
+
+  return map1.get(key)
+    
+
+}
+
+
+
+
 
 // default resolver
 export const defaultResolver = (app: express.Express, bundleSha: string) =>
