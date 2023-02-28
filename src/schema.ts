@@ -18,6 +18,8 @@ import {
 
 import * as db from './db';
 
+const obj_hash = require('object-hash')
+
 const isRef = (obj: Object): boolean => {
   return obj.constructor === Object && Object.keys(obj).length === 1 && '$ref' in obj;
 };
@@ -121,10 +123,11 @@ const resolveSyntheticField = (app: express.Express,
                                schema: string,
                                subAttr: string): db.Datafile[] => {
 
-  console.log('Map size is ' + map1.size)
-  
-  var start = Date.now()
-  if (map1.get(bundleSha)?.get(path)?.get(schema)?.get(subAttr) === undefined) {
+ 
+
+  let key = obj_hash({"bundleSha" : bundleSha, "path": path, "schema": schema, "subAttr": subAttr})
+
+  if (map1.get(key) === undefined) {
     console.log('No cache for ' + bundleSha + "\t" + path + "\t" + schema + "\t" + subAttr)
     let result: db.Datafile[] = Array.from(app.get('bundles')[bundleSha].datafiles.filter((datafile: any) => {
 
@@ -133,36 +136,18 @@ const resolveSyntheticField = (app: express.Express,
       return pathRefExistsInDatafile(path, datafile, subAttr.split('.'), 0);
     }).values());
 
-
-    if (map1.get(bundleSha) === undefined) {
-      map1.set(bundleSha, new Map().set(path, new Map().set(schema, new Map().set(subAttr, result))))      
-    } else {
-      if (map1.get(bundleSha).get(path) === undefined) {
-        map1.get(bundleSha).set(path, new Map().set(schema, new Map().set(subAttr, result)))
-      } else {
-        if (map1.get(bundleSha).get(path).get(schema) === undefined) {
-          map1.get(bundleSha).get(path).set(schema, new Map().set(subAttr, result))
-        } else {
-          if (map1.get(bundleSha).get(path).get(schema).get(subAttr) === undefined) {
-            map1.get(bundleSha).get(path).get(schema).set(subAttr, result)
-          }
-            
-        }
-      }
-    }
-    
-    // console.log(map1.get(bundleSha).get(path).get(schema).get(subAttr))
-    let end = Date.now()
-    console.log(end-start)
-    return result;
+    map1.set(key, result)
+    return result
   }
 
-  console.log('Yes Cache')
-  let end = Date.now()
-  console.log(end-start)
-  return map1.get(bundleSha).get(path).get(schema).get(subAttr)
+  return map1.get(key)
+    
 
 }
+
+
+
+
 
 // default resolver
 export const defaultResolver = (app: express.Express, bundleSha: string) =>
